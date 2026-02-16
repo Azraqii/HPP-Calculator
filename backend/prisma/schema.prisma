@@ -1,0 +1,251 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  FREE
+  PREMIUM
+  TRIAL
+  EXPIRED
+}
+
+model User {
+  id            String              @id @default(uuid())
+  email         String              @unique
+  name          String
+  password      String              // Hashed with bcrypt
+  role          UserRole            @default(USER)
+  status        SubscriptionStatus  @default(FREE)
+  
+  // Relations
+  subscriptions UserSubscription[]
+  transactions  Transaction[]
+  
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  
+  @@index([email])
+  @@index([status])
+}
+
+// ============================================
+// SUBSCRIPTION MANAGEMENT
+// ============================================
+
+model UserSubscription {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status          SubscriptionStatus  @default(PREMIUM)
+  startDate       DateTime            @default(now())
+  endDate         DateTime            // Monthly: +30 days from startDate
+  autoRenew       Boolean             @default(false)
+  
+  // Payment tracking
+  transactionId   String?             @unique
+  transaction     Transaction?        @relation(fields: [transactionId], references: [id])
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([userId, status])
+  @@index([endDate])
+}
+
+// ============================================
+// PAYMENT & TRANSACTIONS
+// ============================================
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  MIDTRANS
+  MANUAL
+}
+
+model Transaction {
+  id                  String              @id @default(uuid())
+  userId              String
+  user                User                @relation(fields: [userId], references: [id])
+  
+  // Midtrans data
+  orderId             String              @unique // Format: SUB-{userId}-{timestamp}
+  snapToken           String?             // From Midtrans
+  snapRedirectUrl     String?
+  
+  // Payment info
+  amount              Int                 // In Rupiah (e.g., 49000)
+  paymentMethod       PaymentMethod       @default(MIDTRANS)
+  status              TransactionStatus   @default(PENDING)
+  
+  // Subscription linkage
+  subscription        UserSubscription?
+  subscriptionPeriod  Int                 @default(30) // Days
+  
+  // Midtrans callback data
+  transactionTime     DateTime?
+  settlementTime      DateTime?
+  fraudStatus         String?
+  paymentType         String?
+  
+  // Metadata
+  metadata            Json?               // Additional data from Midtrans
+  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  @@index([userId])
+  @@index([orderId])
+  @@index([status])
+}
+
+// ============================================
+// COMMODITY PRICES (SCRAPED DATA)
+// ============================================
+
+enum Province {
+  ACEH
+  SUMATERA_UTARA
+  SUMATERA_BARAT
+  RIAU
+  JAMBI
+  SUMATERA_SELATAN
+  BENGKULU
+  LAMPUNG
+  KEPULAUAN_BANGKA_BELITUNG
+  KEPULAUAN_RIAU
+  DKI_JAKARTA
+  JAWA_BARAT
+  JAWA_TENGAH
+  DI_YOGYAKARTA
+  JAWA_TIMUR
+  BANTEN
+  BALI
+  NUSA_TENGGARA_BARAT
+  NUSA_TENGGARA_TIMUR
+  KALIMANTAN_BARAT
+  KALIMANTAN_TENGAH
+  KALIMANTAN_SELATAN
+  KALIMANTAN_TIMUR
+  KALIMANTAN_UTARA
+  SULAWESI_UTARA
+  SULAWESI_TENGAH
+  SULAWESI_SELATAN
+  SULAWESI_TENGGARA
+  GORONTALO
+  SULAWESI_BARAT
+  MALUKU
+  MALUKU_UTARA
+  PAPUA_BARAT
+  PAPUA
+  NASIONAL // For national average
+}
+
+enum CommodityType {
+  BERAS
+  CABAI_MERAH
+  CABAI_RAWIT
+  BAWANG_MERAH
+  BAWANG_PUTIH
+  DAGING_AYAM
+  DAGING_SAPI
+  TELUR_AYAM
+  MINYAK_GORENG
+  GULA_PASIR
+  TEPUNG_TERIGU
+  SUSU
+  TOMAT
+  KENTANG
+  WORTEL
+}
+
+model CommodityPrice {
+  id            String          @id @default(uuid())
+  
+  // Core data
+  commodity     CommodityType
+  province      Province
+  price         Int             // In Rupiah per kg/liter
+  unit          String          @default("kg") // kg, liter, etc
+  
+  // Source tracking
+  sourceUrl     String?
+  scrapedAt     DateTime        @default(now())
+  priceDate     DateTime        @default(now()) // Date from source
+  
+  // Metadata
+  isActive      Boolean         @default(true)
+  notes         String?
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  @@unique([commodity, province, priceDate]) // Prevent duplicates
+  @@index([commodity, province, isActive])
+  @@index([priceDate])
+  @@index([province])
+}
+
+// ============================================
+// PRICE HISTORY (Optional: For analytics)
+// ============================================
+
+model PriceHistory {
+  id            String          @id @default(uuid())
+  commodity     CommodityType
+  province      Province
+  price         Int
+  priceDate     DateTime
+  
+  createdAt     DateTime        @default(now())
+  
+  @@index([commodity, province, priceDate])
+}
+
+// ============================================
+// SYSTEM LOGS (Optional: For monitoring)
+// ============================================
+
+enum LogType {
+  SCRAPER_SUCCESS
+  SCRAPER_ERROR
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_EXPIRED
+}
+
+model SystemLog {
+  id          String    @id @default(uuid())
+  type        LogType
+  message     String
+  metadata    Json?
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([type, createdAt])
+}
