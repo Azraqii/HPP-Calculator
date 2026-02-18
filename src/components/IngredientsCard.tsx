@@ -3,6 +3,24 @@ import { Ingredient } from '../types';
 import { formatCurrency } from '../utils/calculations';
 import { useAuth } from '../context/AuthContext';
 
+const COMMODITY_OPTIONS = [
+  { value: 'Beras',         label: 'Beras',         unit: 'kg'    },
+  { value: 'Tepung Terigu', label: 'Tepung Terigu', unit: 'kg'    },
+  { value: 'Gula Pasir',    label: 'Gula Pasir',    unit: 'kg'    },
+  { value: 'Minyak Goreng', label: 'Minyak Goreng', unit: 'liter' },
+  { value: 'Telur Ayam',    label: 'Telur Ayam',    unit: 'kg'    },
+  { value: 'Daging Ayam',   label: 'Daging Ayam',   unit: 'kg'    },
+  { value: 'Daging Sapi',   label: 'Daging Sapi',   unit: 'kg'    },
+  { value: 'Cabai Merah',   label: 'Cabai Merah',   unit: 'kg'    },
+  { value: 'Cabai Rawit',   label: 'Cabai Rawit',   unit: 'kg'    },
+  { value: 'Bawang Merah',  label: 'Bawang Merah',  unit: 'kg'    },
+  { value: 'Bawang Putih',  label: 'Bawang Putih',  unit: 'kg'    },
+  { value: 'Tomat',         label: 'Tomat',         unit: 'kg'    },
+  { value: 'Susu',          label: 'Susu',          unit: 'liter' },
+  { value: 'Kentang',       label: 'Kentang',       unit: 'kg'    },
+  { value: 'Wortel',        label: 'Wortel',        unit: 'kg'    },
+] as const;
+
 interface IngredientsCardProps {
   ingredients: Ingredient[];
   onAddIngredient: (ingredient: Omit<Ingredient, 'id'>) => void;
@@ -23,6 +41,14 @@ export const IngredientsCard: React.FC<IngredientsCardProps> = ({
 
   const FREE_LIMIT = 5;
   const isLimitReached = !isPremium && ingredients.length >= FREE_LIMIT;
+
+  const handleCommodityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = COMMODITY_OPTIONS.find(c => c.value === e.target.value);
+    setName(e.target.value);
+    if (selected) {
+      setUnit(selected.unit as 'kg' | 'liter' | 'pcs');
+    }
+  };
 
   const handleSubmit = () => {
     if (!name || !price) return;
@@ -57,13 +83,16 @@ export const IngredientsCard: React.FC<IngredientsCardProps> = ({
 
       <div className="mb-6">
         <label className="block mb-2 text-sm font-medium text-dark-text">Nama Bahan</label>
-        <input
-          type="text"
-          className="w-full px-4 py-3.5 bg-dark-bg border border-dark-border rounded-lg text-dark-text font-inter transition-all duration-300 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-dark-text-muted"
-          placeholder="cth: Tepung Terigu"
+        <select
+          className="w-full px-4 py-3.5 bg-dark-bg border border-dark-border rounded-lg text-dark-text font-inter transition-all duration-300 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
           value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+          onChange={handleCommodityChange}
+        >
+          <option value="">Pilih Komoditas</option>
+          {COMMODITY_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-6">

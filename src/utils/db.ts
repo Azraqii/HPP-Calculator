@@ -28,7 +28,13 @@ const COMMODITY_TO_INGREDIENT: Record<string, string[]> = {
 const findMatchingCommodity = (ingredientName: string, commodityData: any[]): number | null => {
   const lowerIngredient = ingredientName.toLowerCase();
   
-  // Try to find exact or partial match
+  // First try direct match with commodity name (case-insensitive, handle underscores)
+  const directMatch = commodityData.find((item: any) => 
+    item.commodity.toLowerCase().replace(/_/g, ' ') === lowerIngredient
+  );
+  if (directMatch) return directMatch.price;
+  
+  // Then try keyword matching
   for (const [commodity, keywords] of Object.entries(COMMODITY_TO_INGREDIENT)) {
     const match = commodityData.find((item: any) => item.commodity === commodity);
     if (match && keywords.some(keyword => lowerIngredient.includes(keyword))) {
