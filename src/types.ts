@@ -24,3 +24,44 @@ export interface MenuItem {
 }
 
 export type MarginStatus = 'safe' | 'warning' | 'danger';
+
+// Auth & Premium types
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  role: 'USER' | 'ADMIN';
+  status: 'FREE' | 'PREMIUM' | 'EXPIRED';
+}
+
+export interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  isAuthenticated: boolean;
+  isPremium: boolean;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+}
+
+export interface SubscriptionPlan {
+  id: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  name: string;
+  price: number;
+  duration: number;
+  label: string;
+  savings?: string;
+}

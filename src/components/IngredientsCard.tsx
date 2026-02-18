@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Ingredient } from '../types';
 import { formatCurrency } from '../utils/calculations';
+import { useAuth } from '../context/AuthContext';
 
 interface IngredientsCardProps {
   ingredients: Ingredient[];
@@ -18,9 +19,14 @@ export const IngredientsCard: React.FC<IngredientsCardProps> = ({
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [unit, setUnit] = useState<'kg' | 'liter' | 'pcs'>('kg');
+  const { isPremium } = useAuth();
+
+  const FREE_LIMIT = 5;
+  const isLimitReached = !isPremium && ingredients.length >= FREE_LIMIT;
 
   const handleSubmit = () => {
     if (!name || !price) return;
+    if (isLimitReached) return;
 
     onAddIngredient({
       name,
@@ -37,9 +43,16 @@ export const IngredientsCard: React.FC<IngredientsCardProps> = ({
     <div className="bg-dark-surface rounded-2xl p-8 shadow-md-dark border border-dark-border animate-fade-in-up hover:translate-y-[-2px] transition-all duration-300">
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-dark-border">
         <h2 className="font-syne text-2xl font-bold text-dark-text">Bahan Baku</h2>
-        <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-success/15 text-success animate-pulse-slow">
-          ● LIVE
-        </span>
+        <div className="flex items-center gap-2">
+          {isPremium && (
+            <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-warning/15 text-warning">
+              ⭐ Premium
+            </span>
+          )}
+          <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-success/15 text-success animate-pulse-slow">
+            ● LIVE
+          </span>
+        </div>
       </div>
 
       <div className="mb-6">
@@ -79,10 +92,16 @@ export const IngredientsCard: React.FC<IngredientsCardProps> = ({
       </div>
 
       <button
-        className="w-full px-6 py-3.5 bg-gradient-to-br from-accent to-[#00b8d4] text-dark-bg rounded-lg font-syne font-semibold uppercase tracking-wider transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg shadow-accent/30 active:translate-y-0"
+        className={`w-full px-6 py-3.5 rounded-lg font-syne font-semibold uppercase tracking-wider transition-all duration-300 ${
+          isLimitReached
+            ? 'bg-dark-border text-dark-text-muted cursor-not-allowed'
+            : 'bg-gradient-to-br from-accent to-[#00b8d4] text-dark-bg hover:translate-y-[-2px] hover:shadow-lg shadow-accent/30 active:translate-y-0'
+        }`}
         onClick={handleSubmit}
+        disabled={isLimitReached}
+        title={isLimitReached ? `Limit FREE: ${FREE_LIMIT} bahan. Upgrade ke Premium untuk unlimited!` : ''}
       >
-        Tambah Bahan
+        {isLimitReached ? `🔒 Limit ${FREE_LIMIT} Bahan (Upgrade ke Premium)` : 'Tambah Bahan'}
       </button>
 
       <div className="flex flex-col gap-3 mt-4">

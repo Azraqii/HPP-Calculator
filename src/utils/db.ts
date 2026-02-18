@@ -1,14 +1,42 @@
 import { Ingredient, Recipe, MenuItem } from '../types';
+import { apiGet } from './api';
 
 // Market price cache to avoid excessive API calls
 const marketPriceCache: Record<string, { price: number; timestamp: number }> = {};
 const CACHE_DURATION = 30000; // 30 seconds
 
-// API Configuration - Anda bisa ganti dengan API Anda sendiri
-const MARKET_API_CONFIG = {
-  enabled: true, // Set false untuk pakai simulasi saja
-  endpoint: 'YOUR_API_ENDPOINT_HERE', // Ganti dengan API endpoint Anda
-  apiKey: 'YOUR_API_KEY_HERE', // Optional: API key jika diperlukan
+// Commodity to ingredient name mapping
+const COMMODITY_TO_INGREDIENT: Record<string, string[]> = {
+  'BERAS': ['beras', 'rice'],
+  'TEPUNG_TERIGU': ['tepung', 'tepung terigu', 'flour'],
+  'GULA_PASIR': ['gula', 'gula pasir', 'sugar'],
+  'MINYAK_GORENG': ['minyak', 'minyak goreng', 'cooking oil'],
+  'TELUR_AYAM': ['telur', 'telur ayam', 'egg'],
+  'DAGING_AYAM': ['ayam', 'daging ayam', 'chicken'],
+  'DAGING_SAPI': ['sapi', 'daging sapi', 'beef'],
+  'CABAI_MERAH': ['cabai', 'cabe', 'cabai merah', 'chili'],
+  'CABAI_RAWIT': ['cabai rawit', 'cabe rawit'],
+  'BAWANG_MERAH': ['bawang merah', 'shallot'],
+  'BAWANG_PUTIH': ['bawang putih', 'garlic'],
+  'TOMAT': ['tomat', 'tomato'],
+  'SUSU': ['susu', 'milk'],
+  'KENTANG': ['kentang', 'potato'],
+  'WORTEL': ['wortel', 'carrot'],
+};
+
+// Helper to find matching commodity for ingredient name
+const findMatchingCommodity = (ingredientName: string, commodityData: any[]): number | null => {
+  const lowerIngredient = ingredientName.toLowerCase();
+  
+  // Try to find exact or partial match
+  for (const [commodity, keywords] of Object.entries(COMMODITY_TO_INGREDIENT)) {
+    const match = commodityData.find((item: any) => item.commodity === commodity);
+    if (match && keywords.some(keyword => lowerIngredient.includes(keyword))) {
+      return match.price;
+    }
+  }
+  
+  return null;
 };
 
 export const DB = {
@@ -38,52 +66,35 @@ export const DB = {
 
   // Fetch real market price from API
   async fetchRealMarketPrice(ingredientName: string): Promise<number | null> {
-    if (!MARKET_API_CONFIG.enabled) {
-      return null;
-    }
-
     try {
-      // Check cache first
       const cached = marketPriceCache[ingredientName];
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
         return cached.price;
       }
 
-      // Example API call - sesuaikan dengan API Anda
-      const response = await fetch(
-        `${MARKET_API_CONFIG.endpoint}?ingredient=${encodeURIComponent(ingredientName)}`,
-        {
-          headers: MARKET_API_CONFIG.apiKey
-            ? { 'Authorization': `Bearer ${MARKET_API_CONFIG.apiKey}` }
-            : {},
+      // Use new API client
+      const response = await apiGet<{ success: boolean; tier: string; data: any[] }>('/prices/national');
+      
+      if (response.success && response.data) {
+        // Use the commodity mapping helper
+        const matchedPrice = findMatchingCommodity(ingredientName, response.data);
+        
+        if (matchedPrice) {
+          marketPriceCache[ingredientName] = { price: matchedPrice, timestamp: Date.now() };
+          return matchedPrice;
         }
-      );
-
-      if (!response.ok) {
-        throw new Error('API request failed');
       }
-
-      const data = await response.json();
-      const price = data.price || data.marketPrice || null;
-
-      if (price) {
-        // Cache the result
-        marketPriceCache[ingredientName] = {
-          price,
-          timestamp: Date.now(),
-        };
-        return price;
-      }
-
+      
       return null;
     } catch (error) {
-      console.warn('Failed to fetch real market price:', error);
+      // API call failed (not authenticated or network error)
+      console.log('Failed to fetch market price:', error);
       return null;
     }
   },
 
   // Get market price with fallback to simulation
-  getMarketPrice(ingredientName: string, basePrice: number): number {
+  getMarketPrice(ingredientName: string): number {
     // Try to get from cache first (if API was successful before)
     const cached = marketPriceCache[ingredientName];
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -113,24 +124,18 @@ export const DB = {
   async initializeMarketPrices(ingredients: Ingredient[]): Promise<Record<string, number>> {
     const prices: Record<string, number> = {};
     
-    // Try to fetch real prices from API
-    if (MARKET_API_CONFIG.enabled) {
-      await Promise.all(
-        ingredients.map(async (ing) => {
-          const realPrice = await this.fetchRealMarketPrice(ing.name);
-          if (realPrice) {
-            prices[ing.name] = realPrice;
-          } else {
-            prices[ing.name] = this.getMarketPrice(ing.name, ing.price);
-          }
-        })
-      );
-    } else {
-      // Use simulation
-      ingredients.forEach((ing) => {
-        prices[ing.name] = this.getMarketPrice(ing.name, ing.price);
-      });
-    }
+    // Try to fetch real prices from API first
+    await Promise.all(
+      ingredients.map(async (ing) => {
+        const realPrice = await this.fetchRealMarketPrice(ing.name);
+        if (realPrice) {
+          prices[ing.name] = realPrice;
+        } else {
+          // Fallback to simulation if API fails or commodity not found
+          prices[ing.name] = this.getMarketPrice(ing.name);
+        }
+      })
+    );
     
     return prices;
   },

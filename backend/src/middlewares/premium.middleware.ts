@@ -17,9 +17,8 @@ const prisma = new PrismaClient();
 // Extend Express Request to include user data
 export interface AuthRequest extends Request {
   user?: {
-    id: string;
+    userId: string;
     email: string;
-    status: SubscriptionStatus;
     role: string;
   };
 }
@@ -50,7 +49,7 @@ export async function checkPremium(
       return;
     }
 
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     // Get user with subscription data
     const user = await prisma.user.findUnique({
@@ -89,6 +88,7 @@ export async function checkPremium(
         success: false,
         error: 'Premium subscription required',
         message: 'Fitur ini hanya tersedia untuk pengguna Premium. Upgrade sekarang untuk akses penuh!',
+        code: 'PREMIUM_REQUIRED',
         upgradeUrl: '/api/subscription/create',
         features: {
           free: ['Manual price input', 'National average prices only', 'Basic calculator'],
@@ -134,7 +134,7 @@ export async function checkSubscriptionExpiry(
       return next();
     }
 
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     // Find expired subscriptions
     const expiredSubscriptions = await prisma.userSubscription.findMany({
