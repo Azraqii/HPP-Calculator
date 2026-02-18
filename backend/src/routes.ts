@@ -10,6 +10,7 @@ import authController from './controllers/auth.controller';
 import authMiddleware from './middlewares/auth.middleware';
 import subscriptionController from './controllers/subscription.controller';
 import pricesController from './controllers/prices.controller';
+import dataController from './controllers/data.controller';
 import { checkPremium, checkSubscriptionExpiry } from './middlewares/premium.middleware';
 
 const router = express.Router();
@@ -124,6 +125,25 @@ router.get(
   checkPremium,  // 🔒 Premium only
   pricesController.getPriceHistory
 );
+
+// ============================================
+// USER DATA ROUTES (Ingredients, Recipes, Menu Items)
+// ============================================
+
+// Ingredients
+router.get('/data/ingredients', authMiddleware, dataController.getIngredients);
+router.post('/data/ingredients', authMiddleware, dataController.createIngredient);
+router.delete('/data/ingredients/:id', authMiddleware, dataController.deleteIngredient);
+
+// Recipes
+router.get('/data/recipes', authMiddleware, dataController.getRecipes);
+router.post('/data/recipes', authMiddleware, dataController.createRecipe);
+router.delete('/data/recipes/:id', authMiddleware, dataController.deleteRecipe);
+
+// Menu Items
+router.get('/data/menu-items', authMiddleware, dataController.getMenuItems);
+router.post('/data/menu-items', authMiddleware, dataController.createMenuItem);
+router.delete('/data/menu-items/:id', authMiddleware, dataController.deleteMenuItem);
 
 // ============================================
 // ADMIN ROUTES (Add as needed)

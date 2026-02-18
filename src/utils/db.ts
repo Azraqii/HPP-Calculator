@@ -1,5 +1,5 @@
 import { Ingredient, Recipe, MenuItem } from '../types';
-import { apiGet } from './api';
+import { apiGet, apiPost, apiDelete } from './api';
 
 // Market price cache to avoid excessive API calls
 const marketPriceCache: Record<string, { price: number; timestamp: number }> = {};
@@ -46,31 +46,136 @@ const findMatchingCommodity = (ingredientName: string, commodityData: any[]): nu
 };
 
 export const DB = {
-  getIngredients(): Ingredient[] {
-    return JSON.parse(localStorage.getItem('hpp_ingredients') || '[]');
+  // ============================================
+  // INGREDIENTS
+  // ============================================
+  async getIngredients(): Promise<Ingredient[]> {
+    try {
+      const response = await apiGet<{ success: boolean; data: any[] }>('/data/ingredients');
+      return response.data.map((ing: any) => ({
+        id: ing.id,
+        name: ing.name,
+        price: ing.price,
+        unit: ing.unit,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch ingredients:', error);
+      return [];
+    }
   },
 
-  getRecipes(): Recipe[] {
-    return JSON.parse(localStorage.getItem('hpp_recipes') || '[]');
+  async saveIngredient(ingredient: Omit<Ingredient, 'id'>): Promise<Ingredient | null> {
+    try {
+      const response = await apiPost<{ success: boolean; data: any }>('/data/ingredients', ingredient);
+      return {
+        id: response.data.id,
+        name: response.data.name,
+        price: response.data.price,
+        unit: response.data.unit,
+      };
+    } catch (error) {
+      console.error('Failed to save ingredient:', error);
+      return null;
+    }
   },
 
-  getMenuItems(): MenuItem[] {
-    return JSON.parse(localStorage.getItem('hpp_menuItems') || '[]');
+  async deleteIngredient(id: string): Promise<boolean> {
+    try {
+      await apiDelete(`/data/ingredients/${id}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete ingredient:', error);
+      return false;
+    }
   },
 
-  saveIngredients(ingredients: Ingredient[]): void {
-    localStorage.setItem('hpp_ingredients', JSON.stringify(ingredients));
+  // ============================================
+  // RECIPES
+  // ============================================
+  async getRecipes(): Promise<Recipe[]> {
+    try {
+      const response = await apiGet<{ success: boolean; data: any[] }>('/data/recipes');
+      return response.data.map((recipe: any) => ({
+        id: recipe.id,
+        name: recipe.name,
+        ingredients: recipe.ingredients,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch recipes:', error);
+      return [];
+    }
   },
 
-  saveRecipes(recipes: Recipe[]): void {
-    localStorage.setItem('hpp_recipes', JSON.stringify(recipes));
+  async saveRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe | null> {
+    try {
+      const response = await apiPost<{ success: boolean; data: any }>('/data/recipes', recipe);
+      return {
+        id: response.data.id,
+        name: response.data.name,
+        ingredients: response.data.ingredients,
+      };
+    } catch (error) {
+      console.error('Failed to save recipe:', error);
+      return null;
+    }
   },
 
-  saveMenuItems(menuItems: MenuItem[]): void {
-    localStorage.setItem('hpp_menuItems', JSON.stringify(menuItems));
+  async deleteRecipe(id: string): Promise<boolean> {
+    try {
+      await apiDelete(`/data/recipes/${id}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete recipe:', error);
+      return false;
+    }
   },
 
-  // Fetch real market price from API
+  // ============================================
+  // MENU ITEMS
+  // ============================================
+  async getMenuItems(): Promise<MenuItem[]> {
+    try {
+      const response = await apiGet<{ success: boolean; data: any[] }>('/data/menu-items');
+      return response.data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        recipeId: item.recipeId,
+        sellingPrice: item.sellingPrice,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch menu items:', error);
+      return [];
+    }
+  },
+
+  async saveMenuItem(menuItem: Omit<MenuItem, 'id'>): Promise<MenuItem | null> {
+    try {
+      const response = await apiPost<{ success: boolean; data: any }>('/data/menu-items', menuItem);
+      return {
+        id: response.data.id,
+        name: response.data.name,
+        recipeId: response.data.recipeId,
+        sellingPrice: response.data.sellingPrice,
+      };
+    } catch (error) {
+      console.error('Failed to save menu item:', error);
+      return null;
+    }
+  },
+
+  async deleteMenuItem(id: string): Promise<boolean> {
+    try {
+      await apiDelete(`/data/menu-items/${id}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete menu item:', error);
+      return false;
+    }
+  },
+
+  // ============================================
+  // MARKET PRICES
+  // ============================================
   async fetchRealMarketPrice(ingredientName: string): Promise<number | null> {
     try {
       const cached = marketPriceCache[ingredientName];

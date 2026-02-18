@@ -4,14 +4,14 @@ export const calculateHPP = (recipe: Recipe | undefined, ingredients: Ingredient
   if (!recipe) return 0;
 
   return recipe.ingredients.reduce((total, item) => {
-    const ingredient = ingredients.find(i => i.id === item.ingredientId);
+    const ingredient = ingredients.find(i => String(i.id) === String(item.ingredientId));
     if (!ingredient) return total;
     return total + (ingredient.price * item.quantity);
   }, 0);
 };
 
 export const calculateMargin = (menuItem: MenuItem, recipes: Recipe[], ingredients: Ingredient[]): number => {
-  const recipe = recipes.find(r => r.id === menuItem.recipeId);
+  const recipe = recipes.find(r => String(r.id) === String(menuItem.recipeId));
   const hpp = calculateHPP(recipe, ingredients);
   if (hpp === 0) return 0;
   return ((menuItem.sellingPrice - hpp) / menuItem.sellingPrice) * 100;

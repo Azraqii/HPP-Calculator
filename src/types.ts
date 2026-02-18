@@ -1,25 +1,25 @@
 export interface Ingredient {
-  id: number;
+  id: string | number; // Support both for backward compatibility
   name: string;
   price: number;
   unit: 'kg' | 'liter' | 'pcs';
 }
 
 export interface RecipeIngredient {
-  ingredientId: number;
+  ingredientId: string | number;
   quantity: number;
 }
 
 export interface Recipe {
-  id: number;
+  id: string | number;
   name: string;
   ingredients: RecipeIngredient[];
 }
 
 export interface MenuItem {
-  id: number;
+  id: string | number;
   name: string;
-  recipeId: number;
+  recipeId: string | number;
   sellingPrice: number;
 }
 

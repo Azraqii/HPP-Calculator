@@ -24,7 +24,7 @@ const COMMODITY_OPTIONS = [
 interface IngredientsCardProps {
   ingredients: Ingredient[];
   onAddIngredient: (ingredient: Omit<Ingredient, 'id'>) => void;
-  onDeleteIngredient: (id: number) => void;
+  onDeleteIngredient: (id: number | string) => void;
   marketPrices: Record<string, number>;
 }
 
@@ -143,26 +143,26 @@ export const IngredientsCard: React.FC<IngredientsCardProps> = ({
           ingredients.map((ing) => (
             <div
               key={ing.id}
-              className="bg-dark-bg p-4 rounded-lg border border-dark-border flex justify-between items-center transition-all duration-300 hover:border-accent hover:translate-x-1"
+              className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border flex flex-col sm:flex-row justify-between sm:items-center gap-3 transition-all duration-300 hover:border-accent hover:translate-x-1"
             >
-              <div>
-                <h4 className="text-base mb-1 text-dark-text">{ing.name}</h4>
-                <p className="text-sm text-dark-text-muted">
+              <div className="flex-1">
+                <h4 className="text-sm sm:text-base mb-1 text-dark-text">{ing.name}</h4>
+                <p className="text-xs sm:text-sm text-dark-text-muted">
                   {formatCurrency(ing.price)} / {ing.unit}
                 </p>
                 {marketPrices[ing.name] && (
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 rounded-full text-xs text-accent mt-2">
+                  <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 bg-accent/10 rounded-full text-xs text-accent mt-2">
                     <span>📊</span>
-                    <span>Market: {formatCurrency(marketPrices[ing.name])}</span>
+                    <span className="text-xs">Market: {formatCurrency(marketPrices[ing.name])}</span>
                   </div>
                 )}
               </div>
-              <div className="flex gap-2 items-center">
-                <span className="font-syne font-bold text-lg text-accent">
+              <div className="flex gap-2 items-center justify-between sm:justify-end">
+                <span className="font-syne font-bold text-base sm:text-lg text-accent">
                   {formatCurrency(ing.price)}
                 </span>
                 <button
-                  className="px-4 py-2 bg-danger/10 text-danger border border-danger rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-danger/20"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-danger/10 text-danger border border-danger rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 hover:bg-danger/20"
                   onClick={() => onDeleteIngredient(ing.id)}
                 >
                   Hapus

@@ -6,7 +6,7 @@ interface RecipesCardProps {
   recipes: Recipe[];
   ingredients: Ingredient[];
   onAddRecipe: (recipe: Omit<Recipe, 'id'>) => void;
-  onDeleteRecipe: (id: number) => void;
+  onDeleteRecipe: (id: number | string) => void;
 }
 
 export const RecipesCard: React.FC<RecipesCardProps> = ({
@@ -26,7 +26,7 @@ export const RecipesCard: React.FC<RecipesCardProps> = ({
     setRecipeIngredients([
       ...recipeIngredients,
       {
-        ingredientId: parseInt(selectedIngredientId),
+        ingredientId: selectedIngredientId,
         quantity: parseFloat(quantity),
       },
     ]);
@@ -71,7 +71,7 @@ export const RecipesCard: React.FC<RecipesCardProps> = ({
       <div className="mb-6">
         <label className="block mb-2 text-sm font-medium text-dark-text">Komposisi</label>
         {recipeIngredients.map((item, index) => {
-          const ingredient = ingredients.find((i) => i.id === item.ingredientId);
+          const ingredient = ingredients.find((i) => String(i.id) === String(item.ingredientId));
           return (
             <div
               key={index}
@@ -147,12 +147,12 @@ export const RecipesCard: React.FC<RecipesCardProps> = ({
           recipes.map((recipe) => (
             <div
               key={recipe.id}
-              className="bg-dark-bg p-4 rounded-lg border border-dark-border transition-all duration-300 hover:border-accent"
+              className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border transition-all duration-300 hover:border-accent"
             >
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="text-base font-semibold text-dark-text">{recipe.name}</h4>
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0 mb-2">
+                <h4 className="text-sm sm:text-base font-semibold text-dark-text">{recipe.name}</h4>
                 <button
-                  className="px-4 py-2 bg-danger/10 text-danger border border-danger rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-danger/20"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-danger/10 text-danger border border-danger rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 hover:bg-danger/20 w-full sm:w-auto"
                   onClick={() => onDeleteRecipe(recipe.id)}
                 >
                   Hapus
@@ -160,21 +160,21 @@ export const RecipesCard: React.FC<RecipesCardProps> = ({
               </div>
               <div className="pt-2 border-t border-dark-border">
                 {recipe.ingredients.map((item, idx) => {
-                  const ingredient = ingredients.find((i) => i.id === item.ingredientId);
+                  const ingredient = ingredients.find((i) => String(i.id) === String(item.ingredientId));
                   return (
-                    <div key={idx} className="flex justify-between items-center py-1 text-sm">
-                      <span className="text-dark-text-muted">
+                    <div key={idx} className="flex justify-between items-center py-1 text-xs sm:text-sm">
+                      <span className="text-dark-text-muted truncate mr-2">
                         {ingredient?.name} - {item.quantity} {ingredient?.unit}
                       </span>
-                      <span className="text-dark-text">
+                      <span className="text-dark-text whitespace-nowrap">
                         {formatCurrency((ingredient?.price || 0) * item.quantity)}
                       </span>
                     </div>
                   );
                 })}
                 <div className="flex justify-between items-center pt-2 mt-2 border-t border-dark-border font-semibold">
-                  <span className="text-dark-text">Total HPP:</span>
-                  <span className="font-syne text-lg text-accent">
+                  <span className="text-dark-text text-xs sm:text-sm">Total HPP:</span>
+                  <span className="font-syne text-base sm:text-lg text-accent">
                     {formatCurrency(calculateHPP(recipe, ingredients))}
                   </span>
                 </div>

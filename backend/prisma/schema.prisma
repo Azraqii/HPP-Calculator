@@ -38,6 +38,9 @@ model User {
   subscriptions UserSubscription[]
   transactions  Transaction[]
   refreshTokens RefreshToken[]
+  ingredients   UserIngredient[]
+  recipes       UserRecipe[]
+  menuItems     UserMenuItem[]
   
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
@@ -265,4 +268,79 @@ model SystemLog {
   createdAt   DateTime  @default(now())
   
   @@index([type, createdAt])
+}
+
+// ============================================
+// USER DATA (Ingredients, Recipes, Menu Items)
+// ============================================
+
+model UserIngredient {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name            String              // Commodity name (e.g., "Beras", "Telur Ayam")
+  price           Int                 // User's purchase price in Rupiah
+  unit            String              @default("kg") // "kg", "liter", "pcs"
+  
+  // Relations
+  recipeIngredients RecipeIngredient[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([userId])
+  @@index([userId, name])
+}
+
+model UserRecipe {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name            String              // Recipe name (e.g., "Nasi Goreng Spesial")
+  
+  // Relations
+  ingredients     RecipeIngredient[]
+  menuItems       UserMenuItem[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([userId])
+}
+
+model RecipeIngredient {
+  id              String          @id @default(uuid())
+  recipeId        String
+  recipe          UserRecipe      @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  ingredientId    String
+  ingredient      UserIngredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  
+  quantity        Float           // Amount used in recipe
+  
+  createdAt       DateTime        @default(now())
+  
+  @@unique([recipeId, ingredientId]) // Prevent duplicate ingredients in same recipe
+  @@index([recipeId])
+  @@index([ingredientId])
+}
+
+model UserMenuItem {
+  id              String          @id @default(uuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name            String          // Menu item name (e.g., "Paket Nasi Goreng")
+  recipeId        String
+  recipe          UserRecipe      @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  sellingPrice    Int             // Selling price in Rupiah
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([userId])
+  @@index([recipeId])
 }

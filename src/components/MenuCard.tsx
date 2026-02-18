@@ -13,7 +13,7 @@ interface MenuCardProps {
   recipes: Recipe[];
   ingredients: Ingredient[];
   onAddMenuItem: (menuItem: Omit<MenuItem, 'id'>) => void;
-  onDeleteMenuItem: (id: number) => void;
+  onDeleteMenuItem: (id: number | string) => void;
 }
 
 export const MenuCard: React.FC<MenuCardProps> = ({
@@ -32,7 +32,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({
 
     onAddMenuItem({
       name,
-      recipeId: parseInt(recipeId),
+      recipeId: recipeId,
       sellingPrice: parseFloat(sellingPrice),
     });
 
@@ -59,7 +59,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({
 
   const totalRevenue = menuItems.reduce((sum, item) => sum + item.sellingPrice, 0);
   const totalCost = menuItems.reduce((sum, item) => {
-    const recipe = recipes.find((r) => r.id === item.recipeId);
+    const recipe = recipes.find((r) => String(r.id) === String(item.recipeId));
     return sum + calculateHPP(recipe, ingredients);
   }, 0);
   const totalProfit = totalRevenue - totalCost;
@@ -131,33 +131,45 @@ export const MenuCard: React.FC<MenuCardProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-dark-bg p-5 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px]">
-              <div className="font-syne text-2xl sm:text-3xl font-bold text-dark-text mb-1">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mt-6">
+            <div className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px] flex flex-col justify-center overflow-hidden">
+              <div 
+                className="font-syne text-lg sm:text-xl font-bold text-dark-text mb-1 truncate" 
+                title={menuItems.length.toString()}
+              >
                 {menuItems.length}
               </div>
-              <div className="text-sm text-dark-text-muted">Total Menu</div>
+              <div className="text-[10px] sm:text-xs text-dark-text-muted leading-tight">Total Menu</div>
             </div>
 
-            <div className="bg-dark-bg p-5 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px]">
-              <div className="font-syne text-2xl sm:text-3xl font-bold text-dark-text mb-1">
+            <div className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px] flex flex-col justify-center overflow-hidden">
+              <div 
+                className="font-syne text-sm sm:text-base font-bold text-dark-text mb-1 truncate" 
+                title={formatCurrency(totalRevenue)}
+              >
                 {formatCurrency(totalRevenue)}
               </div>
-              <div className="text-sm text-dark-text-muted">Total Harga Jual</div>
+              <div className="text-[10px] sm:text-xs text-dark-text-muted leading-tight">Total Harga Jual</div>
             </div>
 
-            <div className="bg-dark-bg p-5 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px]">
-              <div className="font-syne text-2xl sm:text-3xl font-bold text-dark-text mb-1">
+            <div className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px] flex flex-col justify-center overflow-hidden">
+              <div 
+                className="font-syne text-sm sm:text-base font-bold text-dark-text mb-1 truncate" 
+                title={formatCurrency(totalCost)}
+              >
                 {formatCurrency(totalCost)}
               </div>
-              <div className="text-sm text-dark-text-muted">Total HPP</div>
+              <div className="text-[10px] sm:text-xs text-dark-text-muted leading-tight">Total HPP</div>
             </div>
 
-            <div className="bg-dark-bg p-5 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px] col-span-2 md:col-span-3">
-              <div className="font-syne text-2xl sm:text-3xl font-bold text-success mb-1">
+            <div className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border text-center transition-transform duration-300 hover:translate-y-[-2px] col-span-2 md:col-span-3 flex flex-col justify-center overflow-hidden">
+              <div 
+                className="font-syne text-base sm:text-lg md:text-xl font-bold text-success mb-1 truncate" 
+                title={formatCurrency(totalProfit)}
+              >
                 {formatCurrency(totalProfit)}
               </div>
-              <div className="text-sm text-dark-text-muted">Total Profit Potensial</div>
+              <div className="text-[10px] sm:text-xs text-dark-text-muted leading-tight">Total Profit Potensial</div>
             </div>
           </div>
         </>
@@ -171,7 +183,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({
           </div>
         ) : (
           menuItems.map((item) => {
-            const recipe = recipes.find((r) => r.id === item.recipeId);
+            const recipe = recipes.find((r) => String(r.id) === String(item.recipeId));
             const hpp = calculateHPP(recipe, ingredients);
             const margin = calculateMargin(item, recipes, ingredients);
             const status = getMarginStatus(margin);
@@ -179,21 +191,21 @@ export const MenuCard: React.FC<MenuCardProps> = ({
             return (
               <div
                 key={item.id}
-                className="bg-dark-bg p-4 rounded-lg border border-dark-border transition-all duration-300 hover:border-accent"
+                className="bg-dark-bg p-3 sm:p-4 rounded-lg border border-dark-border transition-all duration-300 hover:border-accent"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="text-base font-semibold text-dark-text mb-1">{item.name}</h4>
-                    <p className="text-sm text-dark-text-muted">{recipe?.name}</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0 mb-2">
+                  <div className="flex-1">
+                    <h4 className="text-sm sm:text-base font-semibold text-dark-text mb-1">{item.name}</h4>
+                    <p className="text-xs sm:text-sm text-dark-text-muted">{recipe?.name}</p>
                   </div>
                   <button
-                    className="px-4 py-2 bg-danger/10 text-danger border border-danger rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-danger/20"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-danger/10 text-danger border border-danger rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 hover:bg-danger/20 w-full sm:w-auto"
                     onClick={() => onDeleteMenuItem(item.id)}
                   >
                     Hapus
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm mt-3">
                   <div>
                     <span className="text-dark-text-muted">HPP:</span>
                     <span className="ml-2 text-dark-text font-semibold">
@@ -206,10 +218,10 @@ export const MenuCard: React.FC<MenuCardProps> = ({
                       {formatCurrency(item.sellingPrice)}
                     </span>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <span className="text-dark-text-muted">Margin:</span>
                     <span
-                      className={`ml-2 font-syne font-bold text-lg ${
+                      className={`ml-2 font-syne font-bold text-base sm:text-lg ${
                         status.status === 'safe'
                           ? 'text-success'
                           : status.status === 'warning'
